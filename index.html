@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>攻略閱讀器</title>
+<link href="https://fonts.googleapis.com/css2?family=Iansui&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1a1a1f;--card:#24242b;--el:#2c2c35;--t1:#e8e6e1;--t2:#9b9a95;--t3:#6b6a66;--ac:#c9a96e;--acd:#8b7a50;--acg:rgba(201,169,110,.15);--bd:#35353e;--r:12px;--f:'Iansui',serif}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--f);background:var(--bg);color:var(--t1);min-height:100dvh;line-height:1.85;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 20%,rgba(201,169,110,.04),transparent 50%),radial-gradient(ellipse at 70% 80%,rgba(90,70,40,.03),transparent 50%);pointer-events:none}
+.hd{position:sticky;top:0;z-index:100;background:rgba(26,26,31,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);padding:12px 16px}
+.hd-in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.2rem;color:var(--ac);letter-spacing:2px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.logo svg{width:20px;height:20px;fill:var(--ac)}
+.hbtn{background:none;border:none;cursor:pointer;padding:6px;display:none}
+.hbtn svg{width:20px;height:20px;fill:var(--t2)}
+.sa{max-width:720px;margin:0 auto;padding:20px 16px;position:relative;z-index:1}
+.sb{position:relative}
+.sb input{width:100%;padding:14px 48px 14px 18px;font-family:var(--f);font-size:1rem;background:var(--card);border:1px solid var(--bd);border-radius:var(--r);color:var(--t1);outline:none;transition:all .25s}
+.sb input:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acg)}
+.sb input::placeholder{color:var(--t3);font-family:var(--f)}
+.gb{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:var(--ac);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.gb:active{transform:translateY(-50%) scale(.92)}
+.gb svg{width:18px;height:18px;fill:var(--bg)}
+.note{max-width:720px;margin:0 auto;padding:0 16px;font-size:.78rem;color:var(--t3);text-align:center}
+.ld{text-align:center;padding:60px 20px}
+.sp{width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{color:var(--t3);font-size:.9rem}
+.err{max-width:720px;margin:20px auto;padding:16px 20px;background:rgba(204,68,68,.1);border:1px solid rgba(204,68,68,.25);border-radius:var(--r);color:#e88;text-align:center;font-size:.9rem}
+.g{max-width:720px;margin:0 auto;padding:0 16px 80px;position:relative;z-index:1;display:none}
+.gm{padding:20px 0 16px;border-bottom:1px solid var(--bd);margin-bottom:24px}
+.gt{font-size:1.5rem;font-weight:400;color:var(--ac);line-height:1.4;margin-bottom:8px}
+.gsr{font-size:.82rem;color:var(--t3)}.gsr a{color:var(--t2);text-decoration:none;border-bottom:1px dashed var(--bd)}
+/* Slide-out sidebar */
+.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}
+.sidebar-overlay.on{opacity:1;pointer-events:auto}
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:min(320px,85vw);background:var(--bg);border-right:1px solid var(--bd);z-index:201;transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.sidebar.on{transform:translateX(0)}
+.sidebar-head{padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sidebar-head span{font-size:1rem;color:var(--ac);letter-spacing:1px}
+.sidebar-close{background:none;border:none;cursor:pointer;padding:4px}
+.sidebar-close svg{width:22px;height:22px;fill:var(--t2)}
+.sidebar-body{flex:1;overflow-y:auto;padding:12px 0}
+.sidebar-body ul{list-style:none}
+.sidebar-body li{border-bottom:1px solid rgba(53,53,62,.3)}
+.sidebar-body li:last-child{border-bottom:none}
+.sidebar-body a{display:block;padding:10px 20px;color:var(--t2);text-decoration:none;font-size:.9rem;transition:background .15s}
+.sidebar-body a:active,.sidebar-body a:hover{background:var(--acg);color:var(--ac)}
+.sidebar-body .sub a{padding-left:36px;font-size:.84rem;color:var(--t3)}
+.sidebar-body .ch a{color:var(--t1);font-size:.92rem}
+.sidebar-empty{padding:40px 20px;text-align:center;color:var(--t3);font-size:.88rem}
+.g h2{font-size:1.2rem;font-weight:400;color:var(--ac);padding-bottom:8px;margin:32px 0 16px;border-bottom:1px solid var(--bd);scroll-margin-top:70px}
+.g h3{font-size:1.05rem;font-weight:400;color:var(--t1);margin:24px 0 10px;padding-left:12px;border-left:3px solid var(--acd);scroll-margin-top:70px}
+.g p{font-size:.95rem;color:var(--t2);margin-bottom:12px}
+.g strong{color:var(--t1);font-weight:400}
+.tip{background:var(--el);border:1px solid var(--bd);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:.88rem;color:var(--t2)}
+.cb{background:var(--el);border:1px solid var(--bd);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:.88rem;color:var(--t2)}
+.cb .lbl{color:var(--ac);font-size:.82rem;display:block;margin-bottom:4px}
+.rb{background:linear-gradient(135deg,var(--el),var(--card));border:1px solid var(--acd);border-left:3px solid var(--ac);border-radius:8px;padding:14px 16px;margin:12px 0;font-size:.88rem;color:var(--t2);line-height:1.8}
+.rb .lbl{color:var(--ac);font-size:.82rem;display:block;margin-bottom:4px}
+.g hr{border:none;border-top:1px solid var(--bd);margin:24px 0}
+.iw{margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--bd);background:var(--el)}
+.iw img{width:100%;height:auto;display:block;cursor:zoom-in}
+.np{margin:24px 0;text-align:center}.np a{display:inline-block;padding:12px 24px;background:var(--card);border:1px solid var(--ac);border-radius:var(--r);color:var(--ac);text-decoration:none;font-size:.95rem}
+.lb{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;cursor:zoom-out;padding:20px}
+.lb.on{opacity:1;pointer-events:auto}.lb img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:4px}
+.tb{position:fixed;bottom:24px;right:20px;width:44px;height:44px;border-radius:50%;background:var(--card);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transform:translateY(12px);transition:all .3s;z-index:50}
+.tb.on{opacity:1;transform:translateY(0)}.tb:active{transform:scale(.9)}.tb svg{width:18px;height:18px;fill:var(--ac)}
+.fb{position:sticky;top:54px;z-index:90;background:rgba(26,26,31,.92);backdrop-filter:blur(12px);padding:10px 16px;display:none;max-width:720px;margin:0 auto}
+.fb.on{display:block}
+.fb input{width:100%;padding:10px 14px;font-family:var(--f);font-size:.9rem;background:var(--card);border:1px solid var(--bd);border-radius:8px;color:var(--t1);outline:none}
+.fb .cnt{font-size:.78rem;color:var(--t3);margin-top:6px;text-align:right}
+mark{background:var(--acg);color:var(--ac);padding:1px 4px;border-radius:3px}
+.empty{text-align:center;padding:60px 20px;color:var(--t3)}.empty svg{width:64px;height:64px;fill:var(--bd);margin-bottom:20px}
+.empty p{font-size:1rem;margin-bottom:8px}.empty .hint{font-size:.82rem}
+.pi{display:flex;align-items:center;gap:14px;padding:16px;background:var(--card);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:10px;cursor:pointer;transition:all .2s;max-width:720px;margin-left:auto;margin-right:auto;position:relative}
+.pi:active{background:var(--el);border-color:var(--acd)}
+.pi .ico{width:40px;height:40px;border-radius:8px;background:var(--acg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pi .ico svg{width:20px;height:20px;fill:var(--ac)}
+.pi h4{font-size:.95rem;font-weight:400;color:var(--t1);margin-bottom:2px}.pi span{font-size:.78rem;color:var(--t3)}
+.pi .del{position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;padding:4px;opacity:0;transition:opacity .2s}
+.pi:hover .del,.pi:active .del{opacity:1}
+.pi .del svg{width:16px;height:16px;fill:var(--t3)}
+.pi .pi-body{flex:1;min-width:0}
+.pi .pi-body h4{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-label{max-width:720px;margin:0 auto;padding:8px 16px 4px;font-size:.78rem;color:var(--t3);letter-spacing:1px}
+/* Focus mode */
+.fm{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;flex-direction:column;overflow:hidden}
+.fm.on{display:flex}
+.fm-hd{padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:12px;flex-shrink:0;background:rgba(26,26,31,.95);backdrop-filter:blur(12px)}
+.fm-hd .fm-title{flex:1;font-size:.88rem;color:var(--ac);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fm-hd .fm-counter{font-size:.75rem;color:var(--t3);white-space:nowrap}
+.fm-close{background:none;border:none;cursor:pointer;padding:4px}.fm-close svg{width:22px;height:22px;fill:var(--t2)}
+.fm-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px 16px 80px;max-width:720px;margin:0 auto;width:100%;-webkit-overflow-scrolling:touch}
+.fm-body h2{font-size:1.2rem;font-weight:400;color:var(--ac);padding-bottom:8px;margin-bottom:16px;border-bottom:1px solid var(--bd)}
+.fm-body h3{font-size:1.05rem;font-weight:400;color:var(--t1);margin:16px 0 10px;padding-left:12px;border-left:3px solid var(--acd)}
+.fm-body p{font-size:.95rem;color:var(--t2);margin-bottom:12px}
+.fm-body .tip,.fm-body .cb,.fm-body .rb,.fm-body .iw,.fm-body hr{/* inherit from .g */}
+.fm-body .iw{margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--bd);background:var(--el)}
+.fm-body .iw img{width:100%;height:auto;display:block}
+.fm-body .tip{background:var(--el);border:1px solid var(--bd);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:.88rem;color:var(--t2)}
+.fm-body .cb{background:var(--el);border:1px solid var(--bd);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:.88rem;color:var(--t2)}
+.fm-body .cb .lbl{color:var(--ac);font-size:.82rem;display:block;margin-bottom:4px}
+.fm-body .rb{background:linear-gradient(135deg,var(--el),var(--card));border:1px solid var(--acd);border-left:3px solid var(--ac);border-radius:8px;padding:14px 16px;margin:12px 0;font-size:.88rem;color:var(--t2);line-height:1.8}
+.fm-body .rb .lbl{color:var(--ac);font-size:.82rem;display:block;margin-bottom:4px}
+.fm-nav{position:absolute;bottom:0;left:0;right:0;padding:12px 16px 24px;display:flex;gap:12px;justify-content:center;background:linear-gradient(transparent,var(--bg) 30%)}
+.fm-nav button{padding:10px 28px;border:1px solid var(--bd);background:var(--card);color:var(--t2);font-family:var(--f);font-size:.9rem;border-radius:8px;cursor:pointer;transition:all .2s;min-width:80px}
+.fm-nav button:active{background:var(--el);border-color:var(--acd)}
+.fm-nav button:disabled{opacity:.3;cursor:default}
+.fm-nav button.primary{background:var(--ac);color:var(--bg);border-color:var(--ac)}
+
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:4px}
+@media(min-width:768px){.sa{padding:32px 24px}.g{padding:0 24px 80px}.gt{font-size:1.7rem}body{font-size:17px}}
+</style>
+</head>
+<body>
+<header class="hd"><div class="hd-in">
+<button class="hbtn" id="menuBtn" style="display:none"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg></button>
+<div class="logo"><svg viewBox="0 0 24 24"><path d="M21 4H3a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zm-1 14H4V6h16v12zM6 8h5v2H6V8zm0 4h12v2H6v-2zm0 4h12v2H6v-2zm7-8h5v2h-5V8z"/></svg>攻略閱讀器</div>
+<div style="flex:1"></div>
+<button class="hbtn" id="focusBtn"><svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
+<button class="hbtn" id="sT"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
+</div></header>
+
+<!-- Sidebar overlay -->
+<div class="sidebar-overlay" id="sbOverlay"></div>
+<!-- Sidebar drawer -->
+<nav class="sidebar" id="sb">
+  <div class="sidebar-head">
+    <span>目錄</span>
+    <button class="sidebar-close" id="sbClose"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+  </div>
+  <div class="sidebar-body" id="sbBody">
+    <div class="sidebar-empty">載入攻略後顯示目錄</div>
+  </div>
+</nav>
+<div class="fb" id="fb"><input type="text" id="fi" placeholder="搜尋關鍵字..."><div class="cnt" id="fc"></div></div>
+<div class="sa"><div class="sb">
+<input type="text" id="ui" placeholder="貼上攻略網址...">
+<button class="gb" id="go"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+</div></div>
+
+<div class="empty" id="emp">
+<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0 4h5v2H8v-2zm0-8h8v2H8V10z"/></svg>
+<p>貼上攻略網址，或點選下方攻略</p>
+<div class="hint">支援各類攻略網站</div>
+</div>
+<div id="pl"></div>
+<div class="g" id="g"></div>
+<button class="tb" id="tb"><svg viewBox="0 0 24 24"><path d="M12 4l-8 8h5v8h6v-8h5z"/></svg></button>
+<div class="lb" id="lb"><img id="lbi" src="" alt=""></div>
+<div class="fm" id="fm">
+  <div class="fm-hd">
+    <button class="fm-close" id="fmClose"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    <div class="fm-title" id="fmTitle">專注模式</div>
+    <div class="fm-counter" id="fmCounter"></div>
+  </div>
+  <div class="fm-body" id="fmBody"></div>
+  <div class="fm-nav">
+    <button id="fmPrev">← 上一節</button>
+    <button id="fmNext" class="primary">下一節 →</button>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id),g=$('g'),emp=$('emp'),pl=$('pl'),lb=$('lb'),lbi=$('lbi'),tb=$('tb'),sT=$('sT'),fb=$('fb'),fi=$('fi'),fc=$('fc'),ui=$('ui'),go=$('go'),sb=$('sb'),sbOverlay=$('sbOverlay'),sbBody=$('sbBody'),menuBtn=$('menuBtn');
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function openSb(){sb.classList.add('on');sbOverlay.classList.add('on');document.body.style.overflow='hidden'}
+function closeSb(){sb.classList.remove('on');sbOverlay.classList.remove('on');document.body.style.overflow=''}
+sbOverlay.onclick=$('sbClose').onclick=closeSb;
+menuBtn.onclick=openSb;
+
+// ─── History ───
+function getHist(){try{return JSON.parse(localStorage.getItem('guide_hist')||'[]')}catch{return[]}}
+function saveHist(url,title){
+  let h=getHist().filter(x=>x.url!==url);
+  let host='';try{host=new URL(url).hostname}catch{}
+  h.unshift({url,title,host,ts:Date.now()});
+  if(h.length>30)h=h.slice(0,30);
+  try{localStorage.setItem('guide_hist',JSON.stringify(h))}catch{}
+}
+function delHist(url){
+  const h=getHist().filter(x=>x.url!==url);
+  try{localStorage.setItem('guide_hist',JSON.stringify(h))}catch{}
+  try{localStorage.removeItem('gc_'+url)}catch{}
+  renderHome();
+}
+function renderHome(){
+  const h=getHist();
+  let html='';
+  if(h.length>0){
+    html+='<div class="hist-label">歷史紀錄</div>';
+    h.forEach((item,i)=>{
+      html+='<div class="pi" data-url="'+esc(item.url)+'">'
+        +'<div class="ico"><svg viewBox="0 0 24 24"><path d="M21 6H3c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h18c.6 0 1-.4 1-1V7c0-.6-.4-1-1-1zm-1 10H4V8h16v8z"/></svg></div>'
+        +'<div class="pi-body"><h4>'+esc(item.title)+'</h4><span>'+esc(item.host)+'</span></div>'
+        +'<button class="del" data-i="'+i+'" title="刪除"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>'
+        +'</div>';
+    });
+  }
+  pl.innerHTML=html;
+  pl.querySelectorAll('.pi').forEach(card=>{
+    card.onclick=e=>{if(e.target.closest('.del'))return;ui.value=card.dataset.url;load(card.dataset.url)};
+  });
+  pl.querySelectorAll('.del').forEach(btn=>{
+    btn.onclick=e=>{e.stopPropagation();const h=getHist();const i=+btn.dataset.i;if(h[i])delHist(h[i].url)};
+  });
+}
+renderHome();
+
+// ─── Focus Mode ───
+const fm=$('fm'),fmBody=$('fmBody'),fmTitle=$('fmTitle'),fmCounter=$('fmCounter'),fmPrev=$('fmPrev'),fmNext=$('fmNext'),focusBtn=$('focusBtn');
+let fmSections=[],fmIdx=0,touchStartX=0,touchStartY=0;
+
+function enterFocus(){
+  // Split guide content into sections by h2/h3
+  const nodes=Array.from(g.children);
+  fmSections=[];
+  let cur={title:'',html:''};
+  nodes.forEach(n=>{
+    const tag=n.tagName?.toLowerCase();
+    if(tag==='h2'||tag==='h3'){
+      if(cur.html.trim())fmSections.push({...cur});
+      cur={title:n.textContent.trim(),html:n.outerHTML};
+    } else {
+      cur.html+=n.outerHTML;
+    }
+  });
+  if(cur.html.trim())fmSections.push(cur);
+  if(fmSections.length===0)return;
+  fmIdx=0;
+  showFmSection();
+  fm.classList.add('on');
+  document.body.style.overflow='hidden';
+}
+function exitFocus(){
+  fm.classList.remove('on');
+  document.body.style.overflow='';
+}
+function showFmSection(){
+  const s=fmSections[fmIdx];
+  fmBody.innerHTML=s.html;
+  fmTitle.textContent=s.title||'攻略內容';
+  fmCounter.textContent=(fmIdx+1)+' / '+fmSections.length;
+  fmPrev.disabled=fmIdx===0;
+  fmNext.disabled=fmIdx===fmSections.length-1;
+  fmBody.scrollTop=0;
+  bindImages(fmBody);
+}
+fmPrev.onclick=()=>{if(fmIdx>0){fmIdx--;showFmSection()}};
+fmNext.onclick=()=>{if(fmIdx<fmSections.length-1){fmIdx++;showFmSection()}};
+$('fmClose').onclick=exitFocus;
+focusBtn.onclick=enterFocus;
+
+// Swipe support
+fmBody.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY},{passive:true});
+fmBody.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  const dy=e.changedTouches[0].clientY-touchStartY;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){
+    if(dx<0&&fmIdx<fmSections.length-1){fmIdx++;showFmSection()}
+    else if(dx>0&&fmIdx>0){fmIdx--;showFmSection()}
+  }
+},{passive:true});
+// Keyboard support
+document.addEventListener('keydown',e=>{
+  if(!fm.classList.contains('on'))return;
+  if(e.key==='ArrowLeft'&&fmIdx>0){fmIdx--;showFmSection()}
+  else if(e.key==='ArrowRight'&&fmIdx<fmSections.length-1){fmIdx++;showFmSection()}
+  else if(e.key==='Escape')exitFocus();
+});
+
+function bindImages(el){
+  el.querySelectorAll('.gi').forEach(img=>{
+    img.onclick=()=>{lbi.src=img.dataset.full||img.src;lb.classList.add('on')};
+  });
+}
+
+async function load(url){
+  emp.style.display='none';pl.style.display='none';
+  g.style.display='block';
+
+  // Try cache first
+  const ck='gc_'+url;
+  try{
+    const cached=localStorage.getItem(ck);
+    if(cached){
+      const c=JSON.parse(cached);
+      g.innerHTML=c.h;sT.style.display='block';focusBtn.style.display='block';
+      if(c.t){sbBody.innerHTML=c.t;menuBtn.style.display='block'}
+      bindImages(g);
+      window.scrollTo({top:0});
+      return;
+    }
+  }catch(e){console.log('cache miss',e)}
+
+  g.innerHTML='<div class="ld"><div class="sp"></div><div class="lt">正在載入攻略...</div></div>';
+  try{
+    const proxies=[
+      u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+      u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+    ];
+    let html='';
+    for(const px of proxies){
+      try{const r=await fetch(px(url));if(r.ok){html=await r.text();break}}catch(e){console.log('proxy fail:',e)}
+    }
+    if(!html){
+      try{const r=await fetch(url);if(r.ok)html=await r.text()}catch(e){console.log('direct fail:',e)}
+    }
+    if(!html) throw new Error('無法取得內容。請確認從 localhost 開啟此頁面。');
+    render(html,url);
+  }catch(e){
+    g.innerHTML='<div class="err">載入失敗：'+esc(e.message)+'</div>';
+  }
+}
+
+function render(raw,srcUrl){
+  const doc=new DOMParser().parseFromString(raw,'text/html');
+  let title='';
+  const h1=doc.querySelector('h1');if(h1)title=h1.textContent.trim();
+  if(!title){const hh=doc.querySelector('h2,h3');if(hh)title=hh.textContent.trim()}
+  if(!title)title='攻略內容';
+  let host='';try{host=new URL(srcUrl).hostname}catch{}
+  saveHist(srcUrl,title);
+  let o='<div class="gm"><h1 class="gt">'+esc(title)+'</h1><div class="gsr">來源：<a href="'+esc(srcUrl)+'" target="_blank">'+esc(host)+'</a></div></div>';
+  const toc=[];let si=0;
+  let root=doc.querySelector('.article-content,.post-content,.entry-content,article,.blog-content,.post-body,#content-area');
+  if(!root)root=doc.body;
+  if(!root){o+='<p>無法解析</p>';g.innerHTML=o;return}
+  root.querySelectorAll('script,style,nav,footer,.ad,ins,iframe,[class*=adsbygoogle],noscript,header,aside').forEach(e=>e.remove());
+  // Junk text filters
+  const junk=/^(廣告|作者：|來源：|Posted by|分享|推文|發佈留言|留言|顯示名稱|電子郵件|個人網站|近期熱門|文章搜尋|熱門遊戲|©|Proudly|Theme:)/;
+  const junkExact=new Set(['廣告','20','3 月','分享']);
+  // Headings that should NOT appear in sidebar TOC, but render as sub-info
+  const metaHeading=/^(本頁收集進度|本頁路線|總攻略路線|收集地圖|本頁攻略路線)/;
+
+  function isJunk(t){return !t||junk.test(t)||junkExact.has(t)||t.startsWith('[')||/^\d{4}-\d{2}-\d{2}$/.test(t)}
+
+  function walk(n){
+    if(n.nodeType===3){
+      const t=n.textContent.trim();
+      if(!t||t.length<2||isJunk(t))return;
+      if(t.startsWith('※'))o+='<div class="tip">'+esc(t)+'</div>';
+      else if(t.includes('→')&&t.length>15)o+='<div class="rb"><span class="lbl">攻略路線</span>'+esc(t)+'</div>';
+      else if(t.includes('收集進度')||t.includes('總收集'))o+='<div class="cb">'+esc(t)+'</div>';
+      else o+='<p>'+esc(t)+'</p>';
+      return;
+    }
+    if(n.nodeType!==1)return;
+    const tag=n.tagName.toLowerCase();
+    if(['script','style','nav','footer','iframe','ins','button','form','input','select','noscript','header','aside'].includes(tag))return;
+
+    // Headings
+    if(/^h[1-6]$/.test(tag)){
+      const t=n.textContent.trim();
+      if(!t||isJunk(t))return;
+      // Meta headings (收集進度, 路線 etc) → render as label, NOT in TOC
+      if(metaHeading.test(t)){
+        o+='<div class="cb"><span class="lbl">'+esc(t)+'</span></div>';
+        return;
+      }
+      const id='s'+si++;
+      // Chapter headings start with 【
+      if(t.startsWith('【')){
+        toc.push({id,t,sub:false});
+        o+='<h2 id="'+id+'">'+esc(t)+'</h2>';
+      } else {
+        toc.push({id,t,sub:true});
+        o+='<h3 id="'+id+'">'+esc(t)+'</h3>';
+      }
+      return;
+    }
+
+    // Images (standalone, not inside <a>)
+    if(tag==='img'){
+      let src=n.getAttribute('data-src')||n.getAttribute('data-original')||n.getAttribute('data-lazy-src')||n.getAttribute('src')||'';
+      if(src.includes(','))src=src.split(',')[0].trim().split(' ')[0];
+      if(src.startsWith('data:')||!src||src.length<10)return;
+      if(src.startsWith('//'))src='https:'+src;
+      else if(src.startsWith('/'))try{src=new URL(src,srcUrl).href}catch{}
+      o+='<div class="iw"><img src="'+esc(src)+'" data-full="'+esc(src)+'" loading="lazy" class="gi" onerror="this.parentElement.style.display=\'none\'"></div>';
+      return;
+    }
+
+    // Links wrapping images — prefer <a href> as the full-res source
+    if(tag==='a'){
+      const imgs=n.querySelectorAll('img');
+      if(imgs.length){
+        // The <a href> is typically the full-res webp
+        let fullHref=n.getAttribute('href')||'';
+        if(fullHref.startsWith('data:')||fullHref.length<10)fullHref='';
+        if(fullHref.startsWith('//'))fullHref='https:'+fullHref;
+
+        const seen=new Set();
+        imgs.forEach(im=>{
+          // Get display src from img attributes
+          let s=im.getAttribute('data-src')||im.getAttribute('data-original')||im.getAttribute('data-lazy-src')||im.getAttribute('src')||'';
+          if(s.startsWith('data:')||!s||s.length<10)return;
+          if(s.startsWith('//'))s='https:'+s;
+          if(!seen.has(s)){
+            seen.add(s);
+            // Use href as full-res if available, otherwise img src
+            const full=fullHref||s;
+            o+='<div class="iw"><img src="'+esc(s)+'" data-full="'+esc(full)+'" loading="lazy" class="gi" onerror="this.parentElement.style.display=\'none\'"></div>';
+          }
+        });
+        // If all <img> were placeholders, use <a href> directly
+        if(seen.size===0&&fullHref&&/\.(webp|jpg|jpeg|png|gif)(\?|$)/i.test(fullHref)){
+          o+='<div class="iw"><img src="'+esc(fullHref)+'" data-full="'+esc(fullHref)+'" loading="lazy" class="gi" onerror="this.parentElement.style.display=\'none\'"></div>';
+        }
+        return;
+      }
+    }
+
+    // Paragraphs
+    if(tag==='p'){
+      n.querySelectorAll('img').forEach(i=>walk(i));
+      const t=n.textContent.trim();
+      if(!t||isJunk(t))return;
+      if(t.startsWith('※'))o+='<div class="tip">'+esc(t)+'</div>';
+      else if(t.includes('收集進度')||t.includes('總收集'))o+='<div class="cb">'+esc(t)+'</div>';
+      else if(t.includes('→')&&t.length>15)o+='<div class="rb"><span class="lbl">攻略路線</span>'+esc(t)+'</div>';
+      else o+='<p>'+esc(t)+'</p>';
+      return;
+    }
+
+    if(tag==='hr'){o+='<hr>';return}
+    if(tag==='ul'||tag==='ol'){n.querySelectorAll('li').forEach(li=>{const t=li.textContent.trim();if(t&&!isJunk(t))o+='<p>• '+esc(t)+'</p>'});return}
+    for(const c of n.childNodes)walk(c);
+  }
+  walk(root);
+  if(toc.length>2){
+    // Populate sidebar
+    let tocHtml='<ul>';
+    toc.forEach(e=>{
+      const cls=e.sub?'sub':'ch';
+      tocHtml+='<li class="'+cls+'"><a href="#'+e.id+'" onclick="closeSb()">'+esc(e.t)+'</a></li>';
+    });
+    tocHtml+='</ul>';
+    sbBody.innerHTML=tocHtml;
+    menuBtn.style.display='block';
+  }
+  g.innerHTML=o;sT.style.display='block';focusBtn.style.display='block';
+  bindImages(g);
+  window.scrollTo({top:0});
+
+  // Cache parsed result
+  const ck='gc_'+srcUrl;
+  try{localStorage.setItem(ck,JSON.stringify({h:o,t:sbBody.innerHTML}))}catch(e){console.log('cache save fail',e)}
+}
+
+// Events
+function goHome(){
+  g.style.display='none';g.innerHTML='';
+  emp.style.display='block';pl.style.display='block';
+  menuBtn.style.display='none';sT.style.display='none';focusBtn.style.display='none';
+  fb.classList.remove('on');fm.classList.remove('on');document.body.style.overflow='';
+  sbBody.innerHTML='<div class="sidebar-empty">載入攻略後顯示目錄</div>';
+  ui.value='';window.scrollTo({top:0});
+  renderHome();
+}
+document.querySelector('.logo').style.cursor='pointer';
+document.querySelector('.logo').onclick=goHome;
+go.onclick=()=>{const u=ui.value.trim();if(u)load(u)};
+ui.onkeydown=e=>{if(e.key==='Enter'){const u=ui.value.trim();if(u)load(u)}};
+lb.onclick=()=>lb.classList.remove('on');
+window.onscroll=()=>tb.classList.toggle('on',window.scrollY>400);
+tb.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+sT.onclick=()=>{fb.classList.toggle('on');if(fb.classList.contains('on'))fi.focus();else{clr();fi.value='';fc.textContent=''}};
+let ht;fi.oninput=()=>{clearTimeout(ht);ht=setTimeout(()=>{clr();const q=fi.value.trim();if(!q){fc.textContent='';return}const n=hl(g,q);fc.textContent='找到 '+n+' 處';const f=g.querySelector('mark');if(f)f.scrollIntoView({behavior:'smooth',block:'center'})},250)};
+function hl(r,q){let n=0;const w=document.createTreeWalker(r,NodeFilter.SHOW_TEXT);const ns=[];while(w.nextNode())ns.push(w.currentNode);ns.forEach(nd=>{const p=nd.parentElement;if(!p||p.tagName==='SCRIPT'||p.tagName==='STYLE')return;const t=nd.textContent,lt=t.toLowerCase(),lq=q.toLowerCase();if(!lt.includes(lq))return;const fr=document.createDocumentFragment();let last=0,i=lt.indexOf(lq);while(i!==-1){n++;fr.appendChild(document.createTextNode(t.slice(last,i)));const m=document.createElement('mark');m.textContent=t.slice(i,i+q.length);fr.appendChild(m);last=i+q.length;i=lt.indexOf(lq,last)}fr.appendChild(document.createTextNode(t.slice(last)));p.replaceChild(fr,nd)});return n}
+function clr(){g.querySelectorAll('mark').forEach(m=>{const p=m.parentNode;p.replaceChild(document.createTextNode(m.textContent),m);p.normalize()})}
+</script>
+</body>
+</html>
