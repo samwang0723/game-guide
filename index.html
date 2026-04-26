@@ -185,7 +185,7 @@ function saveHist(url,title){
 function delHist(url){
   const h=getHist().filter(x=>x.url!==url);
   try{localStorage.setItem('guide_hist',JSON.stringify(h))}catch{}
-  try{localStorage.removeItem('gc_'+url)}catch{}
+  try{localStorage.removeItem('gc2_'+url)}catch{}
   renderHome();
 }
 function renderHome(){
@@ -284,7 +284,7 @@ async function load(url){
   g.style.display='block';
 
   // Try cache first
-  const ck='gc_'+url;
+  const ck='gc2_'+url;
   try{
     const cached=localStorage.getItem(ck);
     if(cached){
@@ -423,7 +423,15 @@ function render(raw,srcUrl){
       if(t.startsWith('※'))o+='<div class="tip">'+esc(t)+'</div>';
       else if(t.includes('收集進度')||t.includes('總收集'))o+='<div class="cb">'+esc(t)+'</div>';
       else if(t.includes('→')&&t.length>15)o+='<div class="rb"><span class="lbl">攻略路線</span>'+esc(t)+'</div>';
-      else o+='<p>'+esc(t)+'</p>';
+      else {
+        // Pseudo-heading: short <p> wholly wrapped in <strong>/<b> ending in ：
+        const b=n.querySelector('strong,b');
+        if(b&&b.textContent.trim()===t&&/[：:]$/.test(t)&&t.length<30){
+          const id='s'+si++;
+          toc.push({id,t,sub:true});
+          o+='<h3 id="'+id+'">'+esc(t)+'</h3>';
+        } else o+='<p>'+esc(t)+'</p>';
+      }
       return;
     }
 
@@ -432,7 +440,7 @@ function render(raw,srcUrl){
     for(const c of n.childNodes)walk(c);
   }
   walk(root);
-  if(toc.length>2){
+  if(toc.length>=2){
     // Populate sidebar
     let tocHtml='<ul>';
     toc.forEach(e=>{
@@ -448,7 +456,7 @@ function render(raw,srcUrl){
   window.scrollTo({top:0});
 
   // Cache parsed result
-  const ck='gc_'+srcUrl;
+  const ck='gc2_'+srcUrl;
   try{localStorage.setItem(ck,JSON.stringify({h:o,t:sbBody.innerHTML}))}catch(e){console.log('cache save fail',e)}
 }
 
