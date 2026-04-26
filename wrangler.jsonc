@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "lingering-wood-b38d",
+  "name": "game-guide",
   "compatibility_date": "2026-04-26",
   "observability": {
     "enabled": true
