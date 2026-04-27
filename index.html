@@ -185,7 +185,7 @@ function saveHist(url,title){
 function delHist(url){
   const h=getHist().filter(x=>x.url!==url);
   try{localStorage.setItem('guide_hist',JSON.stringify(h))}catch{}
-  try{localStorage.removeItem('gc2_'+url)}catch{}
+  try{localStorage.removeItem('gc3_'+url)}catch{}
   renderHome();
 }
 function renderHome(){
@@ -284,7 +284,7 @@ async function load(url){
   g.style.display='block';
 
   // Try cache first
-  const ck='gc2_'+url;
+  const ck='gc3_'+url;
   try{
     const cached=localStorage.getItem(ck);
     if(cached){
@@ -338,6 +338,17 @@ function render(raw,srcUrl){
   const metaHeading=/^(本頁收集進度|本頁路線|總攻略路線|收集地圖|本頁攻略路線)/;
 
   function isJunk(t){return !t||junk.test(t)||junkExact.has(t)||t.startsWith('[')||/^\d{4}-\d{2}-\d{2}$/.test(t)}
+
+  // Classify a bold-only block as chapter (sub:false), subsection (sub:true), or null (not a heading)
+  function classifyPseudoHeading(t){
+    if(t.length<2||t.length>=40||/(完|結束)\s*$/.test(t))return null;
+    if(metaHeading.test(t))return null;
+    if(/^[『【].*[』】]\s*$/.test(t))return {sub:false};
+    if(/^(序|第[一二三四五六七八九十百千零０-９0-9]+[章節篇回幕])(\s|[：:]|$)/.test(t))return {sub:false};
+    if(/^(尾聲|終章|前言|序幕|終幕|前章)/.test(t))return {sub:false};
+    if(/[：:]\s*$/.test(t))return {sub:true};
+    return null;
+  }
 
   function walk(n){
     if(n.nodeType===3){
@@ -424,12 +435,14 @@ function render(raw,srcUrl){
       else if(t.includes('收集進度')||t.includes('總收集'))o+='<div class="cb">'+esc(t)+'</div>';
       else if(t.includes('→')&&t.length>15)o+='<div class="rb"><span class="lbl">攻略路線</span>'+esc(t)+'</div>';
       else {
-        // Pseudo-heading: short <p> wholly wrapped in <strong>/<b> ending in ：
+        // Pseudo-heading: <p> wholly wrapped in <strong>/<b>
         const b=n.querySelector('strong,b');
-        if(b&&b.textContent.trim()===t&&/[：:]$/.test(t)&&t.length<30){
+        const cls=b&&b.textContent.trim()===t?classifyPseudoHeading(t):null;
+        if(cls){
           const id='s'+si++;
-          toc.push({id,t,sub:true});
-          o+='<h3 id="'+id+'">'+esc(t)+'</h3>';
+          toc.push({id,t,sub:cls.sub});
+          const ht=cls.sub?'h3':'h2';
+          o+='<'+ht+' id="'+id+'">'+esc(t)+'</'+ht+'>';
         } else o+='<p>'+esc(t)+'</p>';
       }
       return;
@@ -437,6 +450,23 @@ function render(raw,srcUrl){
 
     if(tag==='hr'){o+='<hr>';return}
     if(tag==='ul'||tag==='ol'){n.querySelectorAll('li').forEach(li=>{const t=li.textContent.trim();if(t&&!isJunk(t))o+='<p>• '+esc(t)+'</p>'});return}
+
+    // Pseudo-heading: <div> wholly wrapped in <strong>/<b>
+    if(tag==='div'){
+      const t=n.textContent.trim();
+      if(t&&!isJunk(t)){
+        const b=n.querySelector('strong,b');
+        const cls=b&&b.textContent.trim()===t?classifyPseudoHeading(t):null;
+        if(cls){
+          const id='s'+si++;
+          toc.push({id,t,sub:cls.sub});
+          const ht=cls.sub?'h3':'h2';
+          o+='<'+ht+' id="'+id+'">'+esc(t)+'</'+ht+'>';
+          return;
+        }
+      }
+    }
+
     for(const c of n.childNodes)walk(c);
   }
   walk(root);
@@ -456,7 +486,7 @@ function render(raw,srcUrl){
   window.scrollTo({top:0});
 
   // Cache parsed result
-  const ck='gc2_'+srcUrl;
+  const ck='gc3_'+srcUrl;
   try{localStorage.setItem(ck,JSON.stringify({h:o,t:sbBody.innerHTML}))}catch(e){console.log('cache save fail',e)}
 }
 
